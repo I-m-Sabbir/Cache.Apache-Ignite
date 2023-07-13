@@ -3,42 +3,39 @@ using Apache.Ignite.Core.Client.Cache;
 
 namespace Cache.Operations.Cache.Entity;
 
-public class CustomerOrder
+public class OrderDetails
 {
     [QuerySqlField(IsIndexed = true)]
     public long Id { get; set; }
 
     [QuerySqlField(IsIndexed = true)]
-    public long CustomerId { get; set; }
+    public long OrderId { get; set; }
 
-    [QuerySqlField]
-    public DateTime OrderDate { get; set; }
+    [QuerySqlField(IsIndexed = true)]
+    public long ProductId { get; set; }
 
-    [QuerySqlField]
-    public string Remarks { get; set; }
-
-    public static CacheClientConfiguration GetOrderCacheConfiguration()
+    public static CacheClientConfiguration GetOrderDetailsConfiguration()
     {
         return new CacheClientConfiguration
         {
-            Name = "CustomerOrder",
+            Name = "OrderDetails",
             QueryEntities = new[]
             {
                 new QueryEntity
                 {
                     KeyType = typeof(int),
-                    ValueType = typeof(CustomerOrder),
+                    ValueType = typeof(OrderDetails),
                     Fields = new[]
                     {
                         new QueryField("Id", typeof(long)),
-                        new QueryField("CustomerId", typeof(long)),
-                        new QueryField("OrderDate", typeof(DateTime)),
-                        new QueryField("Remarks", typeof(string))
+                        new QueryField("OrderId", typeof(long)),
+                        new QueryField("ProductId", typeof(long))
                     },
                     Indexes = new[]
                     {
                         new QueryIndex("Id"),
-                        new QueryIndex("CustomerId")
+                        new QueryIndex("OrderId"),
+                        new QueryIndex("ProductId")
                     }
                 }
             },
@@ -46,4 +43,5 @@ public class CustomerOrder
             CacheMode = CacheMode.Replicated
         };
     }
+
 }

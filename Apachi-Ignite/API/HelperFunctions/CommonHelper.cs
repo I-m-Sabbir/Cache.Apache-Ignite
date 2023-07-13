@@ -11,7 +11,7 @@ public static class CommonHelper
     {
         var result = new List<T>();
         var type = typeof(T);
-        var fields = objects.FieldNames;
+        var fields = GetPropertyNames(type);
 
         foreach (var item in objects)
         {
@@ -25,8 +25,7 @@ public static class CommonHelper
 
             for(int i = 0; i < item.Count; i++)
             {
-                var propertyName = fields[i].ToLower();
-                propertyName = char.ToUpper(propertyName[0]) + propertyName.Substring(1);
+                var propertyName = fields[i];
                 type.GetProperty(propertyName)!.SetValue(obj, item[i]);
             }
 
@@ -36,11 +35,25 @@ public static class CommonHelper
 
         return result;
     }
-
+        
     private static object? GetInstance(Type type)
     {
         ConstructorInfo? constructor = type.GetConstructor(new Type[] { });
         
         return (constructor == null) ? null : constructor.Invoke(new object[] { });
     }
+
+    private static List<string> GetPropertyNames(Type type)
+    {
+        var result = new List<string>();
+        var fields = type.GetProperties();
+        foreach(var field in fields)
+        {
+            var name = field.Name;
+            result.Add(name);
+        }
+
+        return result;
+    }
+
 }
