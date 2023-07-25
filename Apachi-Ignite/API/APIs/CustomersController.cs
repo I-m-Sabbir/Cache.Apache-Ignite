@@ -90,9 +90,36 @@ public class CustomersController : ControllerBase
 
             return Ok(result);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost("{count}")]
+    public IActionResult CreateBatchCustomer(int count)
+    {
+        string message = string.Empty;
+        try
+        {
+            var key = _cacheService.GetCacheSize<int, Person>(_cacheName);
+            key = key + 1;
+            var personDictionary = new Dictionary<int, Person>();
+            for (int i = 0; i < count; i++)
+            {
+                var person = new Person { Id = key, Name = "Batch-Create", Address = "Test Address", Age = 20 };
+                personDictionary.Add((int)key, person);
+                key = key + 1;
+            }
+
+            _cacheService.PutAll(_cacheName, personDictionary);
+            message = $"Successfully created {count} customers.";
+            return Ok(message);
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+            return BadRequest(message);
         }
     }
 }
