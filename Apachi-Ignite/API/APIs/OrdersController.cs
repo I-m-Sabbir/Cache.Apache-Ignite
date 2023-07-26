@@ -22,7 +22,7 @@ namespace API.APIs
         }
 
         [HttpGet]
-        public IActionResult Get()
+        public IActionResult Get(int start, int length)
         {
             var str = new List<OrderDto>();
             try
@@ -36,7 +36,9 @@ from CustomerOrder as o
 inner join ""{_orderDetailsCacheName}"".OrderDetails as od on od.OrderId = o.Id 
 inner join ""{personCacheName}"".Person as p on p.Id = o.CustomerId 
 inner join ""{productCacheName}"".Product as pr on pr.Id = od.ProductId 
-Group by p.Name, p.Age, p.Address, o.OrderDate";
+Group by p.Name, p.Age, p.Address, o.OrderDate
+Order by o.OrderDate asc
+OFFSET {start} ROWS FETCH NEXT {length} ROWS ONLY";
 
                 var result = _cacheService.ExecuteQuery<int, CustomerOrder>(_cacheName, query);
                 if (result is not null)
@@ -57,7 +59,7 @@ Group by p.Name, p.Age, p.Address, o.OrderDate";
             {
                 var customerOrderKey = _cacheService.GetCacheSize<int, CustomerOrder>(_cacheName);
                 customerOrderKey = customerOrderKey + 1;
-                var order = new CustomerOrder { Id = customerOrderKey, CustomerId = customerId, Remarks = remarks, OrderDate = DateTime.UtcNow };
+                var order = new CustomerOrder { Id = customerOrderKey, CustomerId = customerId, Remarks = remarks, OrderDate = DateTime.UtcNow.AddHours(6) };
                 _cacheService.Put<int, CustomerOrder>(_cacheName, (int)customerOrderKey, order);
 
                 var orderDetailskey = _cacheService.GetCacheSize<int, OrderDetails>(_cacheName);
@@ -78,6 +80,49 @@ Group by p.Name, p.Age, p.Address, o.OrderDate";
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost]
+        public IActionResult CreateHundredOrders()
+        {
+            string message = string.Empty;
+            try
+            {
+                Random rnd = new Random();
+                var customerOrderKey = _cacheService.GetCacheSize<int, CustomerOrder>(_cacheName);
+                customerOrderKey = customerOrderKey + 1;
+                var orders = new Dictionary<int, CustomerOrder>();
+                
+                var orderDetailskey = _cacheService.GetCacheSize<int, OrderDetails>(_cacheName);
+                orderDetailskey = orderDetailskey + 1;
+                var orderDetailsKeyValuePair = new Dictionary<int, OrderDetails>();
+
+                for (int i = 0; i < 100; i++)
+                {
+                    var order = new CustomerOrder { Id = customerOrderKey, CustomerId = i + 1, Remarks = "Demo", OrderDate = DateTime.UtcNow.AddHours(6) };
+
+                    for (int j = 0; j < 5; j++)
+                    {
+                        var orderDetails = new OrderDetails { Id = orderDetailskey, OrderId = customerOrderKey, ProductId = rnd.Next(1, 10) };
+                        orderDetailsKeyValuePair.Add((int)orderDetailskey, orderDetails);
+                        orderDetailskey += 1;
+                    }
+
+                    orders.Add((int)customerOrderKey, order);
+                    customerOrderKey = customerOrderKey + 1;
+                }
+
+                _cacheService.PutAll(_cacheName, orders);
+                _cacheService.PutAll(_orderDetailsCacheName, orderDetailsKeyValuePair);
+
+                message = "Successfully Created 100 orders.";
+                return Ok(message);
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+                return BadRequest(message);
             }
         }
     }

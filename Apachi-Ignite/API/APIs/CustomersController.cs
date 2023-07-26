@@ -105,14 +105,37 @@ public class CustomersController : ControllerBase
             var key = _cacheService.GetCacheSize<int, Person>(_cacheName);
             key = key + 1;
             var personDictionary = new Dictionary<int, Person>();
-            for (int i = 0; i < count; i++)
+
+            int batch = 500000;
+            int afterBatch = count;
+            while (afterBatch > 0)
             {
-                var person = new Person { Id = key, Name = "Batch-Create", Address = "Test Address", Age = 20 };
-                personDictionary.Add((int)key, person);
-                key = key + 1;
+                if (afterBatch > batch)
+                {
+                    for (int i = 0; i < batch; i++)
+                    {
+                        var person = new Person { Id = key, Name = $"Batch-Create-{key}", Address = "Test Address", Age = 20 };
+                        personDictionary.Add((int)key, person);
+                        key = key + 1;
+                    }
+                    _cacheService.PutAll(_cacheName, personDictionary);
+                    personDictionary.Clear();
+                    afterBatch = afterBatch - batch;
+                }
+                else
+                {
+                    for (int i = 0; i < afterBatch; i++)
+                    {
+                        var person = new Person { Id = key, Name = $"Batch-Create-{key}", Address = "Test Address", Age = 20 };
+                        personDictionary.Add((int)key, person);
+                        key = key + 1;
+                    }
+                    _cacheService.PutAll(_cacheName, personDictionary);
+                    personDictionary.Clear();
+                    afterBatch = 0;
+                }
             }
 
-            _cacheService.PutAll(_cacheName, personDictionary);
             message = $"Successfully created {count} customers.";
             return Ok(message);
         }

@@ -95,5 +95,33 @@ namespace API.APIs
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpPost]
+        public IActionResult AddTenProducts()
+        {
+            string message = string.Empty;
+            try
+            {
+                var key = _cacheService.GetCacheSize<int, Product>(_cacheName);
+                key = key + 1;
+                var products = new Dictionary<int, Product>();
+                for (int i = 0; i < 10; i++)
+                {
+                    var product = new Product { Id = key, Name = $"Demo-Product-{key}", Description = $"Demo-Description-{key}" };
+                    products.Add((int)key, product);
+                    key = key + 1;
+                }
+
+                _cacheService.PutAll(_cacheName, products);
+                message = "Successfully 10 Products Added.";
+                return Ok(message);
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+
+                return BadRequest(message);
+            }
+        }
     }
 }
