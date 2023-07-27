@@ -2,6 +2,7 @@
 using Cache.Operations;
 using Cache.Operations.Cache.Entity;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace API.APIs;
 
@@ -46,12 +47,16 @@ public class CustomersController : ControllerBase
         var str = new List<Person>();
         try
         {
-            var result = _cacheService.ExecuteQuery<int, Person>(_cacheName, "Select * from Person");
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var result = _cacheService.ExecuteQuery<int, Person>(_cacheName, "Select * from Person limit 2500000");
 
             if (result is not null)
                 str = CommonHelper.FieldsQueryCursorToList<Person>(result);
 
-            return Ok(str);
+            stopwatch.Stop();
+            //return Ok(str);
+            return Ok($"{str.Count} Records Load Time: {stopwatch.ElapsedMilliseconds} milliseconds, {TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds).TotalSeconds} seconds and {TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds).TotalMinutes} minutes");
         }
         catch (Exception ex)
         {

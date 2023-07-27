@@ -3,6 +3,7 @@ using Cache.Operations;
 using Cache.Operations.Cache.Dto;
 using Cache.Operations.Cache.Entity;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace API.APIs
 {
@@ -39,12 +40,13 @@ inner join ""{productCacheName}"".Product as pr on pr.Id = od.ProductId
 Group by p.Name, p.Age, p.Address, o.OrderDate
 Order by o.OrderDate asc
 OFFSET {start} ROWS FETCH NEXT {length} ROWS ONLY";
-
+                var stopWatch = new Stopwatch();
+                stopWatch.Start();
                 var result = _cacheService.ExecuteQuery<int, CustomerOrder>(_cacheName, query);
                 if (result is not null)
                     str = CommonHelper.FieldsQueryCursorToList<OrderDto>(result);
-
-                return Ok(str);
+                stopWatch.Stop();
+                return Ok(new { message = $"{str.Count} Records Load Time: {stopWatch.ElapsedMilliseconds} milliseconds, {TimeSpan.FromMilliseconds(stopWatch.ElapsedMilliseconds).TotalSeconds} seconds and {TimeSpan.FromMilliseconds(stopWatch.ElapsedMilliseconds).TotalMinutes} minutes", data = str }); ;
             }
             catch (Exception ex)
             {
@@ -84,7 +86,7 @@ OFFSET {start} ROWS FETCH NEXT {length} ROWS ONLY";
         }
 
         [HttpPost]
-        public IActionResult CreateHundredOrders()
+        public IActionResult CreateThousandOrders()
         {
             string message = string.Empty;
             try
@@ -98,13 +100,13 @@ OFFSET {start} ROWS FETCH NEXT {length} ROWS ONLY";
                 orderDetailskey = orderDetailskey + 1;
                 var orderDetailsKeyValuePair = new Dictionary<int, OrderDetails>();
 
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < 1000; i++)
                 {
                     var order = new CustomerOrder { Id = customerOrderKey, CustomerId = i + 1, Remarks = "Demo", OrderDate = DateTime.UtcNow.AddHours(6) };
 
                     for (int j = 0; j < 5; j++)
                     {
-                        var orderDetails = new OrderDetails { Id = orderDetailskey, OrderId = customerOrderKey, ProductId = rnd.Next(1, 10) };
+                        var orderDetails = new OrderDetails { Id = orderDetailskey, OrderId = customerOrderKey, ProductId = rnd.Next(1, 100) };
                         orderDetailsKeyValuePair.Add((int)orderDetailskey, orderDetails);
                         orderDetailskey += 1;
                     }
@@ -116,7 +118,7 @@ OFFSET {start} ROWS FETCH NEXT {length} ROWS ONLY";
                 _cacheService.PutAll(_cacheName, orders);
                 _cacheService.PutAll(_orderDetailsCacheName, orderDetailsKeyValuePair);
 
-                message = "Successfully Created 100 orders.";
+                message = "Successfully Created 1000 orders.";
                 return Ok(message);
             }
             catch (Exception ex)
